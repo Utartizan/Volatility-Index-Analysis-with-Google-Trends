@@ -164,8 +164,6 @@ legend("topright", legend = c("Actual", "ARIMA", "Random Forest", "XGBoost"),
 # the findings of VIX data can be enhanced with Google
 # Trends data.
 
-  
-  
 #==================== DATA ENHANCED WITH GOOGLE TRENDS DATA =====================#
 
 # Fetching Google Trends data for VIX-related keywords
