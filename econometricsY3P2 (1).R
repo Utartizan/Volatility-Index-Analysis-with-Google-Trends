@@ -189,15 +189,31 @@ ggplot(tidy_data, aes(x = date, y = hits, colour = keyword)) +
   theme(legend.position = "bottom")
 
 # 1. Line Plot of VIX and Google Trends Terms Over Time
-tidy_data_long <- melt(combined_data, id.vars = "date")  # Convert to long format for ggplot
+
+coloursTerms <- c("VIX.Close" = "red", 
+                  "S&P 500" = "#ababab", 
+                  "Recession" = "#8a8a8a", 
+                  "Inflation" = "#6a6a6a", 
+                  "Stock Crash" = "#3f3f3f", 
+                  "Stock Market News" = "#171717")
+
 ggplot(tidy_data_long, aes(x = date, y = value, color = variable)) +
-  geom_line(linewidth = 1.10) +
+  geom_line(data = subset(tidy_data_long, variable != "VIX.Close"), 
+            linewidth = 1) +  # Thinner lines for other terms
+  
+  # Add VIX.Close on top with a thicker line
+  geom_line(data = subset(tidy_data_long, variable == "VIX.Close"), 
+            linewidth = 1.25) +  # Thicker line for VIX.Close
+
   labs(title = "VIX and Google Trends Terms Over Time",
        x = "Date", 
        y = "Value",
        color = "Legend") +
   theme_minimal() +
+  scale_color_manual(values = coloursTerms) +
   theme(legend.position = "right")
+
+
 
 #============================= Correlation Heatmap ===============================#
 
