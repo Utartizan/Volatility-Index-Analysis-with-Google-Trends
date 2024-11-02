@@ -189,9 +189,9 @@ ggplot(tidy_data, aes(x = date, y = hits, colour = keyword)) +
   theme(legend.position = "bottom")
 
 # 1. Line Plot of VIX and Google Trends Terms Over Time
-tidy_data_long <- melt(dataMerge, id.vars = "date")  
+tidy_data_long <- melt(combined_data, id.vars = "date")  # Convert to long format for ggplot
 ggplot(tidy_data_long, aes(x = date, y = value, color = variable)) +
-  geom_line(linewidth = 1.15) +
+  geom_line(linewidth = 1.10) +
   labs(title = "VIX and Google Trends Terms Over Time",
        x = "Date", 
        y = "Value",
@@ -202,17 +202,17 @@ ggplot(tidy_data_long, aes(x = date, y = value, color = variable)) +
 #============================= Correlation Heatmap ===============================#
 
 # 2. Calculate correlations and plot as heatmap
-cor_data <- dataMerge[, -1]  
-cor_matrix <- cor(cor_data, use = "complete.obs") 
-
+cor_data <- combined_data[, -1]  # Exclude the date column for correlation calculation
+cor_matrix <- cor(cor_data, use = "complete.obs")
 corrplot(cor_matrix, method = "color", type = "lower", tl.col = "black",
-         title = "Correlation Between VIX and Google Trends Terms",
+         title = "",
          addCoef.col = "purple", number.cex = 0.9)
-
+mtext("Correlation Between VIX and Google Trends Terms", side = 3, line = 3.6, cex = 1.5)
 #================= Scatter Plot of VIX vs Google Trends Terms ====================#
 
-plot_list <- lapply(names(dataMerge)[-1], function(term) {  
-  ggplot(dataMerge, aes_string(x = term, y = "VIX")) +
+# 3. Scatter plots between VIX and each Google Trends term
+plot_list <- lapply(names(combined_data)[-1], function(term) {  # Iterate through each Google Trends term
+  ggplot(combined_data, aes_string(x = term, y = "VIX")) +
     geom_point(alpha = 0.5) +
     geom_smooth(method = "lm", se = FALSE, color = "blue") +
     labs(title = paste("VIX vs", term),
@@ -222,8 +222,8 @@ plot_list <- lapply(names(dataMerge)[-1], function(term) {
 })
 
 # Display each scatter plot
-# for (plot in plot_list) {
-#   print(plot)
-# }
+for (plot in plot_list) {
+  print(plot)
+}
 
 
