@@ -19,7 +19,7 @@ library(corrplot)
 #================== Data Importing and Preparation ===============================#
 
 # Fetching VIX data
-  getSymbols("^VIX", from = "2014-10-15", to = "2024-10-15", src = "yahoo")
+getSymbols("^VIX", from = "2014-10-15", to = "2024-10-15", src = "yahoo")
   StockData <- Cl(VIX)
   StockData <- na.omit(StockData)
   plot(StockData, main = "VIX - Volatility for VIX Stock Market", ylab = "VIX")
@@ -27,19 +27,19 @@ library(corrplot)
 #================== Time Series Analysis and Model Training ======================#
 
 # Reshaping data for comparative analysis
-  VIX_data <- data.frame(date = index(StockData), VIX = coredata(StockData))
+VIX_data <- data.frame(date = index(StockData), VIX = coredata(StockData))
   dataMerge <- merge(VIX_data, tidy_data, by = "date")
   dataMerge <- na.omit(dataMerge)
 
 # Time Series Decomposition and Stationarity Test
-  adfTest <- adf.test(dataMerge$VIX)
+adfTest <- adf.test(dataMerge$VIX)
   cat("ADF Test p-value:", adfTest$p.value, "\n")
   
   acf_plot <- acf(dataMerge$VIX, plot = TRUE)
   pacf_plot <- pacf(dataMerge$VIX, plot = TRUE)
 
 # Plot ACF and PACF graphs
-  par(mfrow = c(1, 2))
+par(mfrow = c(1, 2))
   plot(acf_plot, main = "ACF of VIX")
   plot(pacf_plot, main = "PACF of VIX")
 
@@ -48,41 +48,42 @@ library(corrplot)
 
 #============ARIMA Model============#
 # Using the ARIMA Model
-  arimaModel <- auto.arima(train_data$VIX) # <- Minimising AIC (selecting the best ARIMA model for the time series)
+arimaModel <- auto.arima(train_data$VIX) # <- Minimising AIC (selecting the best ARIMA model for the time series)
   arimaForecast <- predict(arimaModel, n.ahead = nrow(test_data)) #generate a forecast from arimaModel, specifies number of 'steps' to store in 'arimaForecast' (confidence intervals)
   arimaPredict <- arimaForecast$pred #extracts predicted values, figures, intervals, and assigns i to 'arimaPredict'
   
 # Error metrics for Arima model
-  arimaRMSE <- RMSE(arimaPredict, test_data$VIX) #root mean squared error, the lower the more accurate
+arimaRMSE <- RMSE(arimaPredict, test_data$VIX) #root mean squared error, the lower the more accurate
   arimaMAE <- MAE(arimaPredict, test_data$VIX) #mean absolute error, calculating average of the absolute errors between predictions and actual values
   arimaMAPE <- mean(abs((test_data$VIX - arimaPredict) / test_data$VIX)) * 100 #mean absolute percentage error, the lower the better
 
 #============Random Forest============#
 # Using the Random Forest Model
-  colnames(train_data)[colnames(train_data) == "VIX.Close"] <- "VIX"
+colnames(train_data)[colnames(train_data) == "VIX.Close"] <- "VIX"
   rfModel <- randomForest(VIX ~ ., data = train_data[, colnames(train_data) != "date"], ntree = 500)
   rfPredictions <- predict(rfModel, test_data[,-1])
 
 # Error metrics for Random Forest model
-  rfRMSE <- RMSE(rfPredictions, test_data$VIX)
+rfRMSE <- RMSE(rfPredictions, test_data$VIX)
   rfMAE <- MAE(rfPredictions, test_data$VIX)
   rfMAPE <- mean(abs((test_data$VIX - rfPredictions) / test_data$VIX)) * 100
 
 #============XGBoost Model============#
 # Using the XGBoost Model - Removing qualitative columns
-  trainMatrix <- as.matrix(sapply(train_data[, -c(1, 2)], as.numeric))
+trainMatrix <- as.matrix(sapply(train_data[, -c(1, 2)], as.numeric))
   testMatrix <- as.matrix(sapply(test_data[, -c(1, 2)], as.numeric))
+  
 # Sorting out any potential missing values
-  trainMatrix[is.na(trainMatrix)] <- 0
+trainMatrix[is.na(trainMatrix)] <- 0
   testMatrix[is.na(testMatrix)] <- 0
   
-  xgbTrain <- xgb.DMatrix(data = trainMatrix, label = train_data$VIX)
+xgbTrain <- xgb.DMatrix(data = trainMatrix, label = train_data$VIX)
   xgbTest <- xgb.DMatrix(data = testMatrix)
   xgbModel <- xgboost(data = xgbTrain, nrounds = 100, objective = "reg:squarederror", verbose = 0)
   xgbPredict <- predict(xgbModel, xgbTest)
   
 # Error metrics for XGBoost model
-  xgbRMSE <- RMSE(xgbPredict, test_data$VIX)
+xgbRMSE <- RMSE(xgbPredict, test_data$VIX)
   xgbMAE <- MAE(xgbPredict, test_data$VIX)
   xgbMAPE <- mean(abs((test_data$VIX - xgbPredict) / test_data$VIX)) * 100
 
@@ -214,16 +215,16 @@ ggplot(tidy_data_long, aes(x = date, y = value, color = variable)) +
   theme(legend.position = "right")
 
 
-
 #============================= Correlation Heatmap ===============================#
 
 # 2. Calculate correlations and plot as heatmap
 cor_data <- combined_data[, -1]  # Exclude the date column for correlation calculation
-cor_matrix <- cor(cor_data, use = "complete.obs")
-corrplot(cor_matrix, method = "color", type = "lower", tl.col = "black",
-         title = "",
-         addCoef.col = "purple", number.cex = 0.9)
-mtext("Correlation Between VIX and Google Trends Terms", side = 3, line = 3.6, cex = 1.5)
+  cor_matrix <- cor(cor_data, use = "complete.obs")
+  corrplot(cor_matrix, method = "color", type = "lower", tl.col = "black",
+           title = "",
+           addCoef.col = "purple", number.cex = 0.9)
+  mtext("Correlation Between VIX and Google Trends Terms", side = 3, line = 2.1, cex = 1.5)
+  
 #================= Scatter Plot of VIX vs Google Trends Terms ====================#
 
 # 3. Scatter plots between VIX and each Google Trends term
@@ -241,5 +242,6 @@ plot_list <- lapply(names(combined_data)[-1], function(term) {  # Iterate throug
 for (plot in plot_list) {
   print(plot)
 }
+
 
 
