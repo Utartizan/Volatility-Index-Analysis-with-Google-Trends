@@ -18,9 +18,6 @@ library(writexl)
 #install.packages(c("quantmod", "gtrendsR", "dplyr", "ggplot2", "caret", "forecast", "tseries", "randomForest", "xgboost", "reshape2", "tidyr", "corrplot"))
 
 install.packages("writexl")
-install.packages("Rserve")
-
-library(rser)
 
 write_xlsx(VIX_data, path = "VIX.xlsx")
 
@@ -214,16 +211,6 @@ ggplot() +
 # incredible amounts of accuracy without fine-tuning (how do i even do this?)
 
 #=================================================================================#
-
-plot(test_data$date, test_data$VIX, type = "l", col = "black", lwd = 2,
-     ylim = range(c(10, 45)), # Adjust the y-axis range here
-     xlab = "Date", ylab = "VIX", main = "VIX Actual vs Predictions")
-
-lines(test_data$date, arimaPredict, col = "blue", lwd = 2)
-lines(test_data$date, rfPredictions, col = "red", lwd = 2)
-lines(test_data$date, xgbPredict, col = "green", lwd = 2)
-legend("topright", legend = c("Actual", "ARIMA", "Random Forest", "XGBoost"),
-       col = c("black", "blue", "red", "green"), lty = 1, lwd = 2)
 
 #=================Splitting into Training and Testing Datasets ===================#
 
