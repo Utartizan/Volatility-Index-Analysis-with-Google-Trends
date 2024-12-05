@@ -120,12 +120,10 @@ tidyData <- interest_over_time %>%
   select(date, keyword, hits) %>%
   mutate(hits = hits / max(hits) * 100)
 
-ggplot(tidyData, aes(x = date, y = hits, colour = keyword)) +
-  geom_line(linewidth = 1) +
-  labs(title = "Google Trends Data involving VIX Related Keywords (2014 - 2024)", 
-       x = "Date", 
-       y = "Normalised Interest (%)", 
-       colour = "Terms") +
+ggplot(tidyData, aes(x = date, y = hits, colour = keyword)) + geom_line(linewidth = 1) + labs(title = "Google Trends Data involving VIX Related Keywords (2014 - 2024)", 
+  x = "Date", 
+  y = "Normalised Interest (%)", 
+  colour = "Terms") +
   theme_minimal() +
   scale_y_continuous(labels = scales::percent_format(scale = 1)) +  
   theme(legend.position = "bottom")
@@ -165,17 +163,14 @@ ggplot(mergedData, aes(x = date, y = KeywordHits, colour = Keyword, group = Keyw
 
 #=================================================================================#
 
-correlation_matrix <- cor(mergedData[0,-1])
 
-# Visualise correlation matrix
-ggcorrplot(correlation_matrix, 
-           method = "square", 
-           type = "full", 
-           lab = TRUE, 
-           lab_size = 3, 
-           colors = c("#6D9EC1", "white", "#E46726"), 
-           title = "Correlation Matrix for VIX and Google Trends Data",
-           ggtheme = theme_minimal())
+
+# Work on a correlation matrix for the google trends keywords.
+
+# Also see if you can make 4 graphs, each with a plot like the one above, put up a plot but with the others instead of VIX
+
+
+
 
 #================== Time Series Analysis and Model Training ======================#
 
