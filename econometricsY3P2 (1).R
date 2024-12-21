@@ -15,7 +15,7 @@ library(tidyr)
 library(corrplot)
 library(writexl)
 
-#install.packages(c("quantmod", "gtrendsR", "dplyr", "ggplot2", "caret", "forecast", "tseries", "randomForest", "xgboost", "reshape2", "tidyr", "corrplot"))
+install.packages(c("quantmod", "gtrendsR", "dplyr", "ggplot2", "caret", "forecast", "tseries", "randomForest", "xgboost", "reshape2", "tidyr", "corrplot"))
 
 install.packages("writexl")
 
