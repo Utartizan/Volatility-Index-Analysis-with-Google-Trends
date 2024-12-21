@@ -161,6 +161,70 @@ ggplot(mergedData, aes(x = date, y = KeywordHits, colour = Keyword, group = Keyw
                                  "Stock Market News" = "#8a4e4e"))
 
 
+
+
+#========
+
+
+
+# Normalise Google Trends hits
+tidyData <- interest_over_time %>%
+  select(date, keyword, hits) %>%
+  mutate(date = as.Date(date), hits = hits / max(hits) * 100)
+
+mergedDataOne <- tidyData %>%
+  rename(KeywordHitsOne = hits, Keyword = keyword) %>%
+  bind_rows(data.frame(date = NasdaqData$date, KeywordHitsOne = NasdaqData$IXIC.Close, Keyword = "IXIC")) 
+
+ggplot(mergedDataOne, aes(x = date, y = KeywordHitsOne, colour = Keyword, group = Keyword)) +
+  geom_line(linewidth = 1.05) +  
+  geom_line(data = filter(mergedDataOne, Keyword == "IXIC"), linewidth = 1, colour = "blue") +  
+  labs(title = "Nasdaq and Google Trends Data (2014 - 2024)",
+       x = "Date", y = "Normalised Value (%)", colour = "Keywords") +
+  theme_minimal() +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
+  scale_y_continuous(labels = scales::percent_format(scale = 0.8)) +
+  scale_colour_manual(values = c("IXIC" = "blue", 
+                                 "S&P 500" = "#7CB9E8", 
+                                 "Recession" = "#89CFF0", 
+                                 "Inflation" = "#6699CC", 
+                                 "Stock Crash" = "#318CE7", 
+                                 "Stock Market News" = "#4B9CD3"))
+
+
+# Fix this code, there is a major inconsistency in the lines of each keyword (e.g. Comparing IXIC.Close to the GoogleTrends Keywords)
+
+# Look into enhancing the nature of the data above by, instead of using the normalised value as the Y axis, you use the logarithmic values, so that comparisons between the rate of changes in each keyword is more accurate and consistent.
+
+
+
+#======== GSPC
+
+
+# Normalise Google Trends hits
+tidyData <- interest_over_time %>%
+  select(date, keyword, hits) %>%
+  mutate(date = as.Date(date), hits = hits / max(hits) * 100)
+
+mergedDataTwo <- tidyData %>%
+  rename(KeywordHitsOne = hits, Keyword = keyword) %>%
+  bind_rows(data.frame(date = GSPCData$date, KeywordHitsOne = GSPCData$GSPC.Close, Keyword = "GSPC"))
+
+ggplot(mergedDataOne, aes(x = date, y = KeywordHitsOne, colour = Keyword, group = Keyword)) +
+  geom_line(linewidth = 1.05) +  
+  geom_line(data = filter(mergedDataOne, Keyword == "IXIC"), linewidth = 1, colour = "green") +  
+  labs(title = "Nasdaq and Google Trends Data (2014 - 2024)",
+       x = "Date", y = "Normalised Value (%)", colour = "Keywords") +
+  theme_minimal() +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
+  scale_y_continuous(labels = scales::percent_format(scale = 0.8)) +
+  scale_colour_manual(values = c("IXIC" = "green", 
+                                 "S&P 500" = "#7CB9E8", 
+                                 "Recession" = "#89CFF0", 
+                                 "Inflation" = "#6699CC", 
+                                 "Stock Crash" = "#318CE7", 
+                                 "Stock Market News" = "#4B9CD3"))
+
 #=================================================================================#
 
 
@@ -173,6 +237,8 @@ ggplot(mergedData, aes(x = date, y = KeywordHits, colour = Keyword, group = Keyw
 
 
 #================== Time Series Analysis and Model Training ======================#
+
+# VIX Model T.S.A
 
 VIXData <- data.frame(date = index(VIXData), VIX = coredata(VIXData))
 dataMerge <- merge(VIXData, tidyData, by = "date")
@@ -191,6 +257,36 @@ plot(acfPlot, main = "ACF of VIX")
 plot(pacfPlot, main = "PACF of VIX")
 
 
+# Nasdaq Model T.S.A
+# ONLY RUN ONCE, if you have to run again, restart
+
+NasdaqData <- data.frame(date = index(NasdaqData), Nasdaq = coredata(NasdaqData))
+dataMergeOne <- merge(NasdaqData, mergedDataOne, by = "date")
+dataMergeOne <- na.omit(dataMergeOne)
+
+print(head(NasdaqData))
+
+adfTestOne <- adf.test(dataMergeOne$IXIC)
+cat("ADF Test p-value", adfTestOne$p.value, "\n")
+
+acfPlotOne <- acf(dataMergeOne$IXIC, plot = TRUE)
+pacfPlotOne <- pacf(dataMergeOne$IXIC, plot = TRUE)
+
+par(mfrow = c(1, 2))
+plot(acfPlotOne, main = "ACF of IXIQ (Nasdaq)")
+plot(pacfPlotOne, main = "PACF of IXIQ (Nasdaq)")
+
+
+# GSPC Model T.S.A
+# ONLY RUN ONCE, if you have to run again, restart
+GSPCData <- data.frame(date = index(GSPCData), GSPC = coredata(GSPCData))
+dataMergeTwo <- merge(GSPCData, mergedDataTwo, by = "date")
+dataMergeTwo <- na.omit(dataMergeTwo)
+
+print(head(GSPCData))
+
+
+
 #=================================================================================#
 
 
@@ -203,8 +299,8 @@ plot(pacfPlot, main = "PACF of VIX")
 
 #============================== Forecast: RF Model ===============================#
 
-VIXData$MA <- rollmean(VIXData, k = 10, fill = NA)
-VIXData <- na.omit(VIXData)   
+VIXData$MA <- rollmean(VIX_data, k = 10, fill = NA)
+VIXData <- na.omit(VIX_data)   
 
 trainPct <- 0.8
 trainEnd <- round(nrow(VIXData) * trainPct)
@@ -273,6 +369,22 @@ garchFit <- ugarchfit(spec = garchSpec, data = dataMerge$VIX)
 garchForecast <- ugarchforecast(garch_fit, n.ahead = 30)
 
 plot(garchForecast, which = 1)
+
+
+
+garchSpec1 <- ugarchspec(variance.model = list(model = "sGARCH",
+                                              garchOrder = c(1, 1)),
+                        mean.model = list(armaOrder = c(1, 1),
+                                          include.mean = TRUE),
+                        distribution.model = "sstd")
+
+
+
+garchFit1 <- ugarchfit(spec = garchSpec, data = dataMerge$VIX)
+
+garchForecast1 <- ugarchforecast(garch_fit, n.ahead = 30)
+
+plot(garchForecast1, which = 1)
 
 
 #=================================================================================#
