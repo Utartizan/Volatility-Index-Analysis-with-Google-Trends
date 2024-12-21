@@ -24,51 +24,29 @@ install.packages("ggcorrplot")
 
 #================== VIX, S&P 500, NASDAQ, Dow Jones Data Importing and Preparation ===============================#
 
-# Fetch those types of data for a more comparable analysis:
-## S&P 500
-## NASDAQ
-## Dow Jones
 
-# Obtain relative VIX data from Yahoo from the set dates stated above.
-# Perform data cleaning by omitting, or deleting any rows that possess empty/missing values.
-# Plot.
+#> fetching data from yahoo finance
 
 getSymbols("^VIX", from = "2014-10-15", to = "2024-10-15", src = "yahoo")
-VIXData <- Cl(VIX)
-VIXData <- na.omit(VIXData)
-
-
 getSymbols("^IXIC", from = "2014-10-15", to = "2024-10-15", src = "yahoo")
-NasdaqData <- Cl(IXIC)
-NasdaqData <- na.omit(NasdaqData)
-
 getSymbols("^GSPC", from = "2014-10-15", to = "2024-10-15", src ="yahoo")
-GSPCData <- Cl(GSPC)
-GSPCData <- na.omit(GSPCData)
-
-
 getSymbols("^DJI", from = "2014-10-15", to = "2024-10-15", src ="yahoo")
-DJIData <- Cl(DJI)
-DJIData <- na.omit(DJIData)
+
+
+#> extracting closing prices and removing NA values
+VIXData <- na.omit(CL(VIX))
+NasdaqData <- na.omit(Cl(IXIC))
+GSPCData <- na.omit(Cl(GSPC))
+DJIData <- na.omit(Cl(DJI))
 
 par(mfrow = c(2,2))
-
 plot(VIXData, main = "VIX - VIX Volatility", ylab = "VIX")
-
-plot(NasdaqData, main = "Nasdaq - Daily Returns of the NASDAQ Index", ylab = "IXIC")
-
-plot(GSPCData, main = "S&P500 - Daily Returns of the S&P500 Index", ylab = "GSPC")
-
-plot(DJIData, main = "Dow Jones - Daily Returns of the DJI Index", ylab = "DJI")
+plot(NasdaqData, main = "Nasdaq - Daily Returns", ylab = "IXIC")
+plot(GSPCData, main = "S&P500 - Daily Returns", ylab = "GSPC")
+plot(DJIData, main = "Dow Jones - Daily Returns", ylab = "DJI")
 
 
 #============== VIX/NASDAQ/GSPC/DJI Summary Statistics ============#
-
-# Fetch summary statistical data just in case more content is needed for the article.
-
-# Assign the summaryStatistics function to each of the data sheets created for each market (?)
-
-# Make it so tht the console reads these and outputs them.
 
 summaryStatistics <- function(data) {
   stats <- c(
@@ -98,7 +76,6 @@ DJISummary
 
 #============================= Google Trends Graphs ==============================#
 
-
 # Fetch Google Trends data to obtain selected keyword trends
 ## S&P 500
 ## Recession
@@ -110,15 +87,15 @@ DJISummary
 
 # Plot.
 
+terms <- c("S&P 500", "Recession", "Inflation", "Stock Crash", "Stock Market News")
 
-terms <- c("S&P 500", "Recession", "Inflation", "Stock Crash", "Stock Market News") 
 gTrendsData <- gtrends(terms, gprop = "web", time = "2014-10-15 2024-10-15") 
 interest_over_time <- gTrendsData$interest_over_time 
 interest_over_time$hits <- as.numeric(gsub("<1", "0", interest_over_time$hits)) 
 
 tidyData <- interest_over_time %>%
   select(date, keyword, hits) %>%
-  mutate(hits = hits / max(hits) * 100)
+  mutate(date = as.Date(date), hits = hits / max(hits) * 100)
 
 ggplot(tidyData, aes(x = date, y = hits, colour = keyword)) + geom_line(linewidth = 1) + labs(title = "Google Trends Data involving VIX Related Keywords (2014 - 2024)", 
   x = "Date", 
@@ -143,7 +120,7 @@ tidyData <- interest_over_time %>%
 
 mergedData <- tidyData %>%
   rename(KeywordHits = hits, Keyword = keyword) %>%
-  bind_rows(data.frame(date = VIXData$date, KeywordHits = VIXData$VIX, Keyword = "VIX")) 
+  bind_rows(data.frame(date = index(VIXData), KeywordHits = as.numeric(VIXData), Keyword = "VIX"))
 
 ggplot(mergedData, aes(x = date, y = KeywordHits, colour = Keyword, group = Keyword)) +
   geom_line(linewidth = 1.05) +  
@@ -152,7 +129,6 @@ ggplot(mergedData, aes(x = date, y = KeywordHits, colour = Keyword, group = Keyw
        x = "Date", y = "Normalised Value (%)", colour = "Keywords") +
   theme_minimal() +
   theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
-  scale_y_continuous(labels = scales::percent_format(scale = 0.8)) +
   scale_colour_manual(values = c("VIX" = "red", 
                                  "S&P 500" = "#ff9b9b", 
                                  "Recession" = "#c59292", 
@@ -165,26 +141,22 @@ ggplot(mergedData, aes(x = date, y = KeywordHits, colour = Keyword, group = Keyw
 
 #========
 
+NasdaqDataLog <- log(NasdaqData)
 
+# Combine Google Trends with Nasdaq data
+mergedDataNasdaq <- tidyData %>%
+  rename(KeywordHits = hits, Keyword = keyword) %>%
+  bind_rows(data.frame(date = index(NasdaqDataLog), KeywordHits = as.numeric(NasdaqDataLog), Keyword = "IXIC")) %>%
+  arrange(date)
 
-# Normalise Google Trends hits
-tidyData <- interest_over_time %>%
-  select(date, keyword, hits) %>%
-  mutate(date = as.Date(date), hits = hits / max(hits) * 100)
-
-mergedDataOne <- tidyData %>%
-  rename(KeywordHitsOne = hits, Keyword = keyword) %>%
-  bind_rows(data.frame(date = NasdaqData$date, KeywordHitsOne = NasdaqData$IXIC.Close, Keyword = "IXIC")) 
-
-ggplot(mergedDataOne, aes(x = date, y = KeywordHitsOne, colour = Keyword, group = Keyword)) +
-  geom_line(linewidth = 1.05) +  
-  geom_line(data = filter(mergedDataOne, Keyword == "IXIC"), linewidth = 1, colour = "blue") +  
-  labs(title = "Nasdaq and Google Trends Data (2014 - 2024)",
-       x = "Date", y = "Normalised Value (%)", colour = "Keywords") +
+ggplot(mergedDataNasdaq, aes(x = date, y = KeywordHits, colour = Keyword, group = Keyword)) +
+  geom_line(size = 1.05) +  
+  geom_line(data = filter(mergedDataNasdaq, Keyword == "IXIC"), size = 1, colour = "red") +  
+  labs(title = "Nasdaq (Logarithmic Scale) and Google Trends Data (2014 - 2024)",
+       x = "Date", y = "Log(Nasdaq Index) / Normalized Interest (%)", colour = "Keywords") +
   theme_minimal() +
   theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
-  scale_y_continuous(labels = scales::percent_format(scale = 0.8)) +
-  scale_colour_manual(values = c("IXIC" = "blue", 
+  scale_colour_manual(values = c("IXIC" = "red", 
                                  "S&P 500" = "#7CB9E8", 
                                  "Recession" = "#89CFF0", 
                                  "Inflation" = "#6699CC", 
