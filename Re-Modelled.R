@@ -330,6 +330,8 @@ for (i in 1:future_days) {
 
 future_data <- data.frame(Date = future_dates, Price = future_predictions)
 
+# test 
+
 ggplot() +
   geom_line(data = data.frame(Date = index(VIXData), Price = as.numeric(VIXData[,1])),
             aes(x = Date, y = Price, color = "Historical VIX"), size = 1) +
