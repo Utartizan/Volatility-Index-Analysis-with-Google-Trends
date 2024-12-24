@@ -34,7 +34,7 @@ getSymbols("^DJI", from = "2014-10-15", to = "2024-10-15", src ="yahoo")
 
 
 #> extracting closing prices and removing NA values
-VIXData <- na.omit(CL(VIX))
+VIXData <- na.omit(Cl(VIX))
 NasdaqData <- na.omit(Cl(IXIC))
 GSPCData <- na.omit(Cl(GSPC))
 DJIData <- na.omit(Cl(DJI))
@@ -150,8 +150,8 @@ mergedDataNasdaq <- tidyData %>%
   arrange(date)
 
 ggplot(mergedDataNasdaq, aes(x = date, y = KeywordHits, colour = Keyword, group = Keyword)) +
-  geom_line(size = 1.05) +  
-  geom_line(data = filter(mergedDataNasdaq, Keyword == "IXIC"), size = 1, colour = "red") +  
+  geom_line(linewidth = 1.05) +  
+  geom_line(data = filter(mergedDataNasdaq, Keyword == "IXIC"), linewidth = 1, colour = "red") +  
   labs(title = "Nasdaq (Logarithmic Scale) and Google Trends Data (2014 - 2024)",
        x = "Date", y = "Log(Nasdaq Index) / Normalized Interest (%)", colour = "Keywords") +
   theme_minimal() +
@@ -170,7 +170,7 @@ ggplot(mergedDataNasdaq, aes(x = date, y = KeywordHits, colour = Keyword, group 
 
 
 
-#======== GSPC
+#======== GSPC (needs fixing)
 
 
 # Normalise Google Trends hits
@@ -210,193 +210,244 @@ ggplot(mergedDataOne, aes(x = date, y = KeywordHitsOne, colour = Keyword, group 
 
 #================== Time Series Analysis and Model Training ======================#
 
-# VIX Model T.S.A
+# VIX T.S.A Model
 
-VIXData <- data.frame(date = index(VIXData), VIX = coredata(VIXData))
-dataMerge <- merge(VIXData, tidyData, by = "date")
-dataMerge <- na.omit(dataMerge)
+VIXData <- getSymbols("^VIX", src = "yahoo", auto.assign = FALSE)  
+VIXData <- data.frame(date = index(VIXData), VIX = coredata(VIXData[, 4]))  
 
-print(head(VIXData))
+dataMergeVIX <- merge(VIXData, tidyData, by = "date")
+dataMergeVIX <- na.omit(dataMergeVIX)
 
-adfTest <- adf.test(dataMerge$VIX)
-cat("ADF Test p-value:", adfTest$p.value, "\n")
+adfTestVIX <- adf.test(dataMergeVIX$VIX)
+cat("ADF Test p-value for VIX:", adfTestVIX$p.value, "\n")
 
-acfPlot <- acf(dataMerge$VIX, plot = TRUE)
-pacfPlot <- pacf(dataMerge$VIX, plot = TRUE)
-
-par(mfrow = c(1, 2))
-plot(acfPlot, main = "ACF of VIX")
-plot(pacfPlot, main = "PACF of VIX")
-
-
-# Nasdaq Model T.S.A
-# ONLY RUN ONCE, if you have to run again, restart
-
-NasdaqData <- data.frame(date = index(NasdaqData), Nasdaq = coredata(NasdaqData))
-dataMergeOne <- merge(NasdaqData, mergedDataOne, by = "date")
-dataMergeOne <- na.omit(dataMergeOne)
-
-print(head(NasdaqData))
-
-adfTestOne <- adf.test(dataMergeOne$IXIC)
-cat("ADF Test p-value", adfTestOne$p.value, "\n")
-
-acfPlotOne <- acf(dataMergeOne$IXIC, plot = TRUE)
-pacfPlotOne <- pacf(dataMergeOne$IXIC, plot = TRUE)
-
-par(mfrow = c(1, 2))
-plot(acfPlotOne, main = "ACF of IXIQ (Nasdaq)")
-plot(pacfPlotOne, main = "PACF of IXIQ (Nasdaq)")
-
-
-# GSPC Model T.S.A
-# ONLY RUN ONCE, if you have to run again, restart
-GSPCData <- data.frame(date = index(GSPCData), GSPC = coredata(GSPCData))
-dataMergeTwo <- merge(GSPCData, mergedDataTwo, by = "date")
-dataMergeTwo <- na.omit(dataMergeTwo)
-
-print(head(GSPCData))
-
-
-
-#=================================================================================#
-
-
-
-
-
-
-
-
-
-#============================== Forecast: RF Model ===============================#
-
-VIXData$MA <- rollmean(VIX_data, k = 10, fill = NA)
-VIXData <- na.omit(VIX_data)   
-
-trainPct <- 0.8
-trainEnd <- round(nrow(VIXData) * trainPct)
-
-trainData <- VIXData[1:trainEnd, ]
-testData <- VIXData[(trainEnd + 1):nrow(VIXData), ]
-
-trainX <- as.data.frame(trainData[, -1])   
-trainY <- as.numeric(trainData[, 1]) 
-
-testX <- as.data.frame(testData[, -1])
-testY <- as.numeric(testData[, 1])
-
-rf_model <- randomForest(trainX, trainY, ntree = 200)  
-predictions <- predict(rf_model, testX)
-
-future_days <- 30
-future_dates <- seq(from = max(index(VIXData)), by = "days", length.out = future_days)
-
-last_row <- testX[nrow(testX), , drop = FALSE]
-future_predictions <- numeric(future_days)
-
-for (i in 1:future_days) {
-  future_predictions[i] <- predict(rf_model, last_row)
-  last_row[1, 1] <- future_predictions[i]  # Replace last value with the new prediction
+if (adfTestVIX$p.value > 0.05) {
+  cat("VIX data is non-stationary. Applying first difference...\n")
+  
+  differenced_VIX <- diff(dataMergeVIX$VIX)  
+  dataMergeVIX <- dataMergeVIX[-1, ]        
+  dataMergeVIX$VIX <- differenced_VIX   
 }
 
-future_data <- data.frame(Date = future_dates, Price = future_predictions)
+par(mfrow = c(1, 2))
+acf(dataMergeVIX$VIX, main = "ACF of VIX")
+pacf(dataMergeVIX$VIX, main = "PACF of VIX")
+print(adfTestVIX)
 
-# test 
+# ------------------------------------------------------------------------------
 
-ggplot() +
-  geom_line(data = data.frame(Date = index(VIXData), Price = as.numeric(VIXData[,1])),
-            aes(x = Date, y = Price, color = "Historical VIX"), size = 1) +
-  geom_line(data = data.frame(Date = index(testData), Price = predictions),
-            aes(x = Date, y = Price, color = "Random Forest Best of Fit"), size = 1) +
-  geom_line(data = future_data, aes(x = Date, y = Price, color = "Future Predictions"), size = 1) +
-  labs(title = "VIX Data and Forecast",
-       x = "Date", y = "VIX Value", color = "Legend") +
-  scale_color_manual(values = c("Historical VIX" = "#820263", "Random Forest Best of Fit" = "#FFA632", "Future Predictions" = "#44884E")) +
-  theme_linedraw()
+# Nasdaq (IXIC) T.S.A Model
 
+Nasdaq <- getSymbols("^IXIC", src = "yahoo", auto.assign = FALSE)  
+NasdaqData <- data.frame(date = index(Nasdaq), IXIC = coredata(Nasdaq[, 4])) 
 
-#=================================================================================#
+dataMergeNasdaq <- merge(NasdaqData, tidyData, by = "date")
+dataMergeNasdaq <- na.omit(dataMergeNasdaq)
 
+adfTestNasdaq <- adf.test(dataMergeNasdaq$IXIC)
+cat("ADF Test p-value for Nasdaq:", adfTestNasdaq$p.value, "\n")
 
-
-
-
-
-
-
-
-
-
-#============================= Garch Implementation ==============================#
-
-library(rugarch)
-
-garchSpec <- ugarchspec(variance.model = list(model = "sGARCH",
-                        garchOrder = c(1, 1)),
-                        mean.model = list(armaOrder = c(1, 1),
-                        include.mean = TRUE),
-                        distribution.model = "std")
-
-garchFit <- ugarchfit(spec = garchSpec, data = dataMerge$VIX)
-
-garchForecast <- ugarchforecast(garch_fit, n.ahead = 30)
-
-plot(garchForecast, which = 1)
-
-
-
-garchSpec1 <- ugarchspec(variance.model = list(model = "sGARCH",
-                                              garchOrder = c(1, 1)),
-                        mean.model = list(armaOrder = c(1, 1),
-                                          include.mean = TRUE),
-                        distribution.model = "sstd")
-
-
-
-garchFit1 <- ugarchfit(spec = garchSpec, data = dataMerge$VIX)
-
-garchForecast1 <- ugarchforecast(garch_fit, n.ahead = 30)
-
-plot(garchForecast1, which = 1)
-
-
-#=================================================================================#
-
-
-
-
-
-
-#=========================== Multivariate Regression =============================#
-
-dataMerge <- data.frame(date = index(VIXData), VIX = as.numeric(VIXData))
-
-#== Debug this later ==#
-dataMerge <- dataMerge %>%
-  arrange(date) %>%
-  mutate(
-    VIX_Lag1 = lag(VIX, 1),
-    VIX_Lag2 = lag(VIX, 2)
-  )
-
-#======================#
-
-dataMerge <- na.omit(dataMerge)
-
-print(head(dataMerge))
-
-trainPct <- 0.8
-trainEnd <- round(nrow(dataMerge) * trainPct)
-trainData <- dataMerge[1:trainEnd, ]
-testData <- dataMerge[(trainEnd + 1):nrow(dataMerge), ]
+if (adfTestNasdaq$p.value > 0.05) {
+  cat("Nasdaq data is non-stationary. Applying first difference...\n")
   
-reg_model <- lm(VIX ~ VIX_Lag1 + VIX_Lag2, data = dataMerge)
-summary(reg_model)
-reg_predictions <- predict(reg_model, newdata = testData)
+  differenced_IXIC <- diff(dataMergeNasdaq$IXIC)  
+  dataMergeNasdaq <- dataMergeNasdaq[-1, ]        
+  dataMergeNasdaq$IXIC <- differenced_IXIC    
+}
 
-plot(dataMerge$date, dataMerge$VIX, type = "l", col = "blue", main = "Multivariate Regression Fit")
-lines(dataMerge$date, reg_predictions, col = "red")
+par(mfrow = c(1, 2))
+acf(dataMergeNasdaq$IXIC, main = "ACF of Nasdaq")
+pacf(dataMergeNasdaq$IXIC, main = "PACF of Nasdaq")
+print(adfTestNasdaq)
+
+
+# ------------------------------------------------------------------------------
+
+
+# S&P 500 T.S.A Model
+
+
+SP500 <- getSymbols("^GSPC", src = "yahoo", auto.assign = FALSE)  
+SP500Data <- data.frame(date = index(SP500), GSPC = coredata(SP500[, 4])) 
+
+dataMergeSP500 <- merge(SP500Data, tidyData, by = "date")
+dataMergeSP500 <- na.omit(dataMergeSP500)
+
+adfTestSP500 <- adf.test(dataMergeSP500$GSPC)
+cat("ADF Test p-value for S&P500:", adfTestNasdaq$p.value, "\n")
+
+if (adfTestSP500$p.value > 0.05) {
+  cat("S&P500 data is non-stationary. Applying first difference...\n")
+  
+  differenced_GSPC <- diff(dataMergeSP500$GSPC)  
+  dataMergeSP500 <- dataMergeSP500[-1, ]        
+  dataMergeSP500$GSPC <- differenced_GSPC    
+}
+
+par(mfrow = c(1, 2))
+acf(dataMergeSP500$GSPC, main = "ACF of S&P500")
+pacf(dataMergeSP500$GSPC, main = "PACF of S&P500")
+print(adfTestSP500)
+
+
+
+
+# ------------------------------------------------------------------------------
+
+
+# DJI T.S.A Model
+
+
+DJI <- getSymbols("^DJI", src = "yahoo", auto.assign = FALSE)  
+DJIData <- data.frame(date = index(DJI), DJI = coredata(DJI[, 4])) 
+
+dataMergeDJI <- merge(DJIData, tidyData, by = "date")
+dataMergeDJI <- na.omit(dataMergeDJI)
+
+adfTestDJI <- adf.test(dataMergeDJI$DJI)
+cat("ADF Test p-value for DJI", adfTestNasdaq$p.value, "\n")
+
+if (adfTestDJI$p.value > 0.05) {
+  cat("DJI data is non-stationary. Applying first difference...\n")
+  
+  differenced_DJI <- diff(dataMergeDJI$DJI)  
+  dataMergeDJI <- dataMergeDJI[-1, ]        
+  dataMergeDJI$DJI <- differenced_DJI  
+}
+
+par(mfrow = c(1, 2))
+acf(dataMergeDJI$DJI, main = "ACF of DJI")
+pacf(dataMergeDJI$DJI, main = "PACF of DJI")
+print(adfTestDJI)
+
+
+
+
+
+
+
+plot(GSPCData$GSPC.Close, DJIData$DJI.Close, 
+     main = "S&P 500 vs Dow Jones Closing Prices",
+     xlab = "S&P 500 (Closing Price)", 
+     ylab = "Dow Jones (Closing Price)")
+
+
+
+
+
+correlationMatrix <- cor(combinedData %>% select(GSPC.Close, DJI.Close, IXIC.Close, VIX.Close))
+
+library(corrplot)
+corrplot(correlationMatrix, method = "number")
 
 
 #=================================================================================#
+
+
+
+# =========================== Data Preparation for Random Forest =========================== #
+
+combinedData <- dataMergeVIX %>%
+  left_join(dataMergeNasdaq, by = "date") %>%
+  left_join(dataMergeSP500, by = "date") %>%
+  left_join(dataMergeDJI, by = "date") %>%
+  na.omit()  # Remove rows with NA values
+
+# Ensure the data is stationary (if not already)
+combinedData <- combinedData %>%
+  mutate(
+    VIX_diff = diff(c(0, VIX)),  # First difference of VIX
+    IXIC_diff = diff(c(0, IXIC)),  # First difference of Nasdaq
+    GSPC_diff = diff(c(0, GSPC)),  # First difference of S&P 500
+    DJI_diff = diff(c(0, DJI))     # First difference of Dow Jones
+  ) %>%
+  select(date, VIX_diff, IXIC_diff, GSPC_diff, DJI_diff, everything()) %>%
+  filter(date != min(date))  # Remove first row created by differencing
+
+# Use the normalized Google Trends data and merge it with the financial data
+finalData <- combinedData %>%
+  left_join(tidyData %>%
+              spread(keyword, hits), by = "date") %>%
+  na.omit()  # Remove NA values to ensure compatibility
+
+# ============================ Random Forest Training ============================ #
+
+# Define target variable and predictors
+# Here, we use `VIX_diff` as the target variable (to predict VIX movement)
+target <- finalData$VIX_diff
+predictors <- finalData %>%
+  select(-date, -VIX_diff) %>%  # Remove target and non-predictor columns
+  as.data.frame()
+
+# Split data into training and testing sets
+set.seed(123)  # For reproducibility
+trainIndex <- createDataPartition(target, p = 0.6, list = FALSE)
+trainPredictors <- predictors[trainIndex, ]
+trainTarget <- target[trainIndex]
+testPredictors <- predictors[-trainIndex, ]
+testTarget <- target[-trainIndex]
+
+# Train a Random Forest model
+set.seed(123)
+rfModel <- randomForest(
+  x = trainPredictors,
+  y = trainTarget,
+  ntree = 250,         # Number of trees
+  mtry = floor(sqrt(ncol(trainPredictors))),  # Number of variables randomly selected
+  importance = TRUE    # Calculate variable importance
+)
+
+# Print Random Forest model summary
+print(rfModel)
+
+# ============================ Random Forest Evaluation ============================ #
+
+# Predict on test data
+predictions <- predict(rfModel, newdata = testPredictors)
+
+# Evaluate the model's performance
+rfMetrics <- postResample(predictions, testTarget)
+cat("Random Forest RMSE:", rfMetrics["RMSE"], "\n")
+cat("Random Forest R-squared:", rfMetrics["Rsquared"], "\n")
+
+# Feature Importance
+featureImportance <- importance(rfModel)
+featureImportanceDF <- data.frame(Variable = rownames(featureImportance),
+                                  Importance = featureImportance[, "IncNodePurity"])
+featureImportanceDF <- featureImportanceDF[order(-featureImportanceDF$Importance), ]
+
+# Plot Feature Importance
+ggplot(featureImportanceDF, aes(x = reorder(Variable, Importance), y = Importance)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  coord_flip() +
+  labs(
+    title = "Feature Importance in Random Forest",
+    x = "Features",
+    y = "Importance"
+  ) +
+  theme_minimal()
+
+# ============================ Predicting Future Values ============================ #
+
+newPredictors <- testPredictors  # Use test data for demonstration
+futurePredictions <- predict(rfModel, newdata = newPredictors)
+
+# Add predictions to a dataframe
+results <- data.frame(
+  Actual = testTarget,
+  Predicted = predictions
+)
+results$Residuals <- results$Actual - results$Predicted
+
+# Visualize actual vs predicted values
+ggplot(results, aes(x = Actual, y = Predicted)) +
+  geom_point(colour = "blue") +
+  geom_abline(intercept = 0, slope = 1, colour = "red", linetype = "dashed") +
+  labs(
+    title = "Actual vs Predicted VIX Movements",
+    x = "Actual VIX Movement",
+    y = "Predicted VIX Movement"
+  ) +
+  theme_minimal()
+
+
