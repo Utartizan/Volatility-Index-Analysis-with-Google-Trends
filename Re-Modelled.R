@@ -451,3 +451,41 @@ ggplot(results, aes(x = Actual, y = Predicted)) +
   theme_minimal()
 
 
+
+
+#============ Testing Garch Implementatino Again ============#
+
+library(rugarch)
+
+garchSpec <- ugarchspec(variance.model = list(model = "sGARCH",
+                        garchOrder = c(1, 1)),
+                        mean.model = list(armaOrder = c(1,1),
+                        include.mean = TRUE),
+                        distribution.model = "sstd")
+                        
+garchFitVIX <- ugarchfit(spec = garchSpec, data = dataMergeVIX$VIX.Close)
+garchFitIXIC <- ugarchfit(spec = garchSpec, data = dataMergeNasdaq$IXIC.Close)
+garchFitSP500 <- ugarchfit(spec = garchSpec, data = dataMergeSP500$GSPC.Close)
+garchFitDJI <- ugarchfit(spec = garchSpec, data = dataMergeDJI$DJI.Close)
+
+
+garchForecastVIX <- ugarchforecast(garchFitVIX, n.ahead = 30)
+garchForecastIXIC <- ugarchforecast(garchFitIXIC, n.ahead = 30)
+#garchForecastSP500 <- ugarchforecast(garchFitSP500, n.ahead = 30)
+garchForecastDJI <- ugarchforecast(garchFitDJI, n.ahead = 30)
+
+
+par(mfrow=c(2,2))
+plot(garchForecastVIX, which = 1)
+plot(garchForecastIXIC, which = 1)
+#plot(garchForecastSP500, which = 1)
+plot(garchForecastDJI, which = 1)
+
+
+
+#seems to be an issue with equating the garchforecast values under the S&P500 variable.... try fix later, good work on making the other 3 work.
+
+#also figure out a way to bring back the yellow-highlighted range for the prediction.
+
+
+
