@@ -186,7 +186,7 @@ ggplot(mergedDataNasdaq, aes(x = date, y = KeywordHits, colour = Keyword, group 
   geom_line(linewidth = 1.05) +  
   geom_line(data = filter(mergedDataNasdaq, Keyword == "Nasdaq (Log)"), linewidth = 1, colour = "red") +  
   labs(title = "Nasdaq (Logarithmic Scale) and Google Trends Data (2014 - 2024)",
-       x = "Date", y = "Normalized Value [%]", colour = "Keywords") +
+       x = "Date", y = "Normalised Value [%]", colour = "Keywords") +
   theme_minimal() +
   theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
   scale_colour_manual(values = c("Nasdaq (Log)" = "red", 
@@ -228,7 +228,7 @@ ggplot(mergedDataGSPC, aes(x = date, y = KeywordHits, colour = Keyword, group = 
   geom_line(linewidth = 1.05) +  
   geom_line(data = filter(mergedDataGSPC, Keyword == "S&P 500 (Log)"), linewidth = 1, colour = "purple") +  
   labs(title = "G (Logarithmic Scale) and Google Trends Data (2014 - 2024)",
-       x = "Date", y = "Normalized Value [%]", colour = "Keywords") +
+       x = "Date", y = "Normalised Value [%]", colour = "Keywords") +
   theme_minimal() +
   theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
   scale_colour_manual(values = c("S&P 500 (Log)" = "purple", 
@@ -282,7 +282,7 @@ ggplot(mergedDataDJI, aes(x = date, y = KeywordHits, colour = Keyword, group = K
 plot_VIX <- ggplot(mergedData, aes(x = date, y = KeywordHits, colour = Keyword, group = Keyword)) +
   geom_line(linewidth = 1.05) +  
   geom_line(data = filter(mergedData, Keyword == "VIX"), linewidth = 1, colour = "#A68F26") +  
-  labs(title = "VIX and Google Trends Data (2014 - 2024)",
+  labs(title = "VIX (Logarithmic Scale) and Google Trends Data (2014 - 2024)",
        x = "Date", y = "Normalised Value (%)", colour = "Keywords") +
   theme_minimal() +
   theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
@@ -298,7 +298,7 @@ plot_Nasdaq <- ggplot(mergedDataNasdaq, aes(x = date, y = KeywordHits, colour = 
   geom_line(linewidth = 1.05) +  
   geom_line(data = filter(mergedDataNasdaq, Keyword == "Nasdaq (Log)"), linewidth = 1, colour = "darkgreen") +  
   labs(title = "Nasdaq (Logarithmic Scale) and Google Trends Data (2014 - 2024)",
-       x = "Date", y = "Normalized Value [%]", colour = "Keywords") +
+       x = "Date", y = "Normalised Value [%]", colour = "Keywords") +
   theme_minimal() +
   theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
   scale_colour_manual(values = c("Nasdaq (Log)" = "darkgreen", 
@@ -328,7 +328,7 @@ plot_DJI <- ggplot(mergedDataDJI, aes(x = date, y = KeywordHits, colour = Keywor
   geom_line(linewidth = 1.05) +  
   geom_line(data = filter(mergedDataDJI, Keyword == "Dow Jones (Log)"), linewidth = 1, colour = "#ED5A8D") +  
   labs(title = "Dow Jones (Logarithmic Scale) and Google Trends Data (2014 - 2024)",
-       x = "Date", y = "Normalized Value [%]", colour = "Keywords") +
+       x = "Date", y = "Normalised Value [%]", colour = "Keywords") +
   theme_minimal() +
   theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
   scale_colour_manual(values = c("Dow Jones (Log)" = "#ED5A8D", 
