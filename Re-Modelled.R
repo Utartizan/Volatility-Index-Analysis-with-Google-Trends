@@ -16,7 +16,10 @@ library(zoo)
 library(rugarch)
 library(ggcorrplot)
 library(e1071)
+library(patchwork)
 
+
+install.packages("patchwork")
 install.packages("ggcorrplot")
 # Ensure all the packages are installed.
 #install.packages(c("quantmod", "gtrendsR", "dplyr", "ggplot2", "caret", "forecast", "tseries", "randomForest", "xgboost", "reshape2", "tidyr", "corrplot", "writexl", "rugarch", "zoo"))
@@ -269,6 +272,74 @@ ggplot(mergedDataDJI, aes(x = date, y = KeywordHits, colour = Keyword, group = K
                                  "Stock Crash" = "#318CE7", 
                                  "Stock Market News" = "#4B9CD3"))
 
+
+
+#=============== all plots put together =================#
+
+
+# Define the individual plots
+# Plot 1: VIX and Google Trends Data
+plot_VIX <- ggplot(mergedData, aes(x = date, y = KeywordHits, colour = Keyword, group = Keyword)) +
+  geom_line(linewidth = 1.05) +  
+  geom_line(data = filter(mergedData, Keyword == "VIX"), linewidth = 1, colour = "#A68F26") +  
+  labs(title = "VIX and Google Trends Data (2014 - 2024)",
+       x = "Date", y = "Normalised Value (%)", colour = "Keywords") +
+  theme_minimal() +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
+  scale_colour_manual(values = c("VIX" = "#A68F26", 
+                                 "S&P 500" = "#7CB9E8", 
+                                 "Recession" = "#89CFF0", 
+                                 "Inflation" = "#6699CC", 
+                                 "Stock Crash" = "#318CE7", 
+                                 "Stock Market News" = "#4B9CD3"))
+
+# Plot 2: Nasdaq (Logarithmic Scale) and Google Trends Data
+plot_Nasdaq <- ggplot(mergedDataNasdaq, aes(x = date, y = KeywordHits, colour = Keyword, group = Keyword)) +
+  geom_line(linewidth = 1.05) +  
+  geom_line(data = filter(mergedDataNasdaq, Keyword == "Nasdaq (Log)"), linewidth = 1, colour = "darkgreen") +  
+  labs(title = "Nasdaq (Logarithmic Scale) and Google Trends Data (2014 - 2024)",
+       x = "Date", y = "Normalized Value [%]", colour = "Keywords") +
+  theme_minimal() +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
+  scale_colour_manual(values = c("Nasdaq (Log)" = "darkgreen", 
+                                 "S&P 500" = "#7CB9E8", 
+                                 "Recession" = "#89CFF0", 
+                                 "Inflation" = "#6699CC", 
+                                 "Stock Crash" = "#318CE7", 
+                                 "Stock Market News" = "#4B9CD3"))
+
+# Plot 3: S&P 500 (Logarithmic Scale) and Google Trends Data
+plot_GSPC <- ggplot(mergedDataGSPC, aes(x = date, y = KeywordHits, colour = Keyword, group = Keyword)) +
+  geom_line(linewidth = 1.05) +  
+  geom_line(data = filter(mergedDataGSPC, Keyword == "S&P 500 (Log)"), linewidth = 1, colour = "#893168") +  
+  labs(title = "S&P 500 (Logarithmic Scale) and Google Trends Data (2014 - 2024)",
+       x = "Date", y = "Normalized Value [%]", colour = "Keywords") +
+  theme_minimal() +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
+  scale_colour_manual(values = c("S&P 500 (Log)" = "#893168", 
+                                 "S&P 500" = "#7CB9E8", 
+                                 "Recession" = "#89CFF0", 
+                                 "Inflation" = "#6699CC", 
+                                 "Stock Crash" = "#318CE7", 
+                                 "Stock Market News" = "#4B9CD3"))
+
+# Plot 4: Dow Jones (Logarithmic Scale) and Google Trends Data
+plot_DJI <- ggplot(mergedDataDJI, aes(x = date, y = KeywordHits, colour = Keyword, group = Keyword)) +
+  geom_line(linewidth = 1.05) +  
+  geom_line(data = filter(mergedDataDJI, Keyword == "Dow Jones (Log)"), linewidth = 1, colour = "#ED5A8D") +  
+  labs(title = "Dow Jones (Logarithmic Scale) and Google Trends Data (2014 - 2024)",
+       x = "Date", y = "Normalized Value [%]", colour = "Keywords") +
+  theme_minimal() +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
+  scale_colour_manual(values = c("Dow Jones (Log)" = "#ED5A8D", 
+                                 "S&P 500" = "#7CB9E8", 
+                                 "Recession" = "#89CFF0", 
+                                 "Inflation" = "#6699CC", 
+                                 "Stock Crash" = "#318CE7", 
+                                 "Stock Market News" = "#4B9CD3"))
+
+# arrange the four plots into a 2x2 grid using patchwork
+(plot_VIX | plot_Nasdaq) / (plot_GSPC | plot_DJI)
 
 
 
