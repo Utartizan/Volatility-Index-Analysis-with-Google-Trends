@@ -15,6 +15,7 @@ library(writexl)
 library(zoo)
 library(rugarch)
 library(ggcorrplot)
+library(e1071)
 
 install.packages("ggcorrplot")
 # Ensure all the packages are installed.
@@ -56,7 +57,9 @@ summaryStatistics <- function(data) {
     Min = min(data),
     Max = max(data),
     Q1 = quantile(data, 0.25),
-    Q3 = quantile(data, 0.75)
+    Q3 = quantile(data, 0.75),
+    Kurtosis = kurtosis(data),
+    Skewness = skewness(data)
   )
   return(stats)
 }
