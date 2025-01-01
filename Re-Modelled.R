@@ -108,7 +108,12 @@ ggplot(tidyData, aes(x = date, y = hits, colour = keyword)) + geom_line(linewidt
   scale_y_continuous(labels = scales::percent_format(scale = 1)) +  
   theme(legend.position = "bottom")
 
-#========== ALTERNATIVE ==========#
+
+
+
+
+
+#========== VIX MERGED ==========#
 
 # Fetch Google Trends data
 terms <- c("S&P 500", "Recession", "Inflation", "Stock Crash", "Stock Market News")
@@ -140,31 +145,56 @@ ggplot(mergedData, aes(x = date, y = KeywordHits, colour = Keyword, group = Keyw
                                  "Stock Market News" = "#8a4e4e"))
 
 
-
-
 #========
 
-NasdaqDataLog <- log(NasdaqData)
+# Function for Min-Max Scaling
 
-# Combine Google Trends with Nasdaq data
+# normalise all values, calculating the min-max ranges (na.rm = TRUE meaning to ignore any non-assigned values)
+min_max_scale <- function(x) {
+  
+  # scale it all to 100 to align the trends of nasdaq to the google trends keywords
+  scaled <- (x - min(x, na.rm = TRUE)) / (max(x, na.rm = TRUE) - min(x, na.rm = TRUE))
+  
+  # return
+  return(scaled * 100)  # Scale to [0, 100]
+}
+
+tidyData <- interest_over_time %>%
+  select(date, keyword, hits) %>%
+  mutate(date = as.Date(date), hits = min_max_scale(hits), 
+         keyword = factor(keyword))
+
+# (apply log first, then scale)
+NasdaqDataLog <- log(NasdaqData)
+NasdaqDataScaled <- data.frame(
+  date = index(NasdaqDataLog), 
+  hits = min_max_scale(as.numeric(NasdaqDataLog)),
+  keyword = "Nasdaq (Log)"
+)
+
 mergedDataNasdaq <- tidyData %>%
   rename(KeywordHits = hits, Keyword = keyword) %>%
-  bind_rows(data.frame(date = index(NasdaqDataLog), KeywordHits = as.numeric(NasdaqDataLog), Keyword = "IXIC")) %>%
+  bind_rows(data.frame(date = NasdaqDataScaled$date, 
+                       KeywordHits = NasdaqDataScaled$hits, 
+                       Keyword = "Nasdaq (Log)")) %>%
   arrange(date)
 
 ggplot(mergedDataNasdaq, aes(x = date, y = KeywordHits, colour = Keyword, group = Keyword)) +
   geom_line(linewidth = 1.05) +  
-  geom_line(data = filter(mergedDataNasdaq, Keyword == "IXIC"), linewidth = 1, colour = "red") +  
+  geom_line(data = filter(mergedDataNasdaq, Keyword == "Nasdaq (Log)"), linewidth = 1, colour = "red") +  
   labs(title = "Nasdaq (Logarithmic Scale) and Google Trends Data (2014 - 2024)",
-       x = "Date", y = "Log(Nasdaq Index) / Normalized Interest (%)", colour = "Keywords") +
+       x = "Date", y = "Normalized Value [%]", colour = "Keywords") +
   theme_minimal() +
   theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
-  scale_colour_manual(values = c("IXIC" = "red", 
+  scale_colour_manual(values = c("Nasdaq (Log)" = "red", 
                                  "S&P 500" = "#7CB9E8", 
                                  "Recession" = "#89CFF0", 
                                  "Inflation" = "#6699CC", 
                                  "Stock Crash" = "#318CE7", 
                                  "Stock Market News" = "#4B9CD3"))
+
+
+## Seems to be an inverse-ish relationship between the logarithmic values of Nasdaq and the google trends data.
 
 
 # Fix this code, there is a major inconsistency in the lines of each keyword (e.g. Comparing IXIC.Close to the GoogleTrends Keywords)
@@ -173,32 +203,74 @@ ggplot(mergedDataNasdaq, aes(x = date, y = KeywordHits, colour = Keyword, group 
 
 
 
-#======== GSPC (needs fixing)
+#======== GSPC  
 
+# log-transform and normalize GSPC data
+GSPCDataLog <- log(GSPCData)  # Apply logarithmic transformation
+GSPCDataScaled <- data.frame(
+  date = index(GSPCDataLog), 
+  hits = min_max_scale(as.numeric(GSPCDataLog)),  # Normalize using min_max_scale
+  keyword = "S&P 500 (Log)"
+)
 
-# Normalise Google Trends hits
-tidyData <- interest_over_time %>%
-  select(date, keyword, hits) %>%
-  mutate(date = as.Date(date), hits = hits / max(hits) * 100)
+# combine Google Trends data with GSPC data
+mergedDataGSPC <- tidyData %>%
+  rename(KeywordHits = hits, Keyword = keyword) %>%
+  bind_rows(data.frame(date = GSPCDataScaled$date, 
+                       KeywordHits = GSPCDataScaled$hits, 
+                       Keyword = "S&P 500 (Log)")) %>%
+  arrange(date)
 
-mergedDataTwo <- tidyData %>%
-  rename(KeywordHitsOne = hits, Keyword = keyword) %>%
-  bind_rows(data.frame(date = GSPCData$date, KeywordHitsOne = GSPCData$GSPC.Close, Keyword = "GSPC"))
-
-ggplot(mergedDataOne, aes(x = date, y = KeywordHitsOne, colour = Keyword, group = Keyword)) +
+ggplot(mergedDataGSPC, aes(x = date, y = KeywordHits, colour = Keyword, group = Keyword)) +
   geom_line(linewidth = 1.05) +  
-  geom_line(data = filter(mergedDataOne, Keyword == "IXIC"), linewidth = 1, colour = "green") +  
-  labs(title = "Nasdaq and Google Trends Data (2014 - 2024)",
-       x = "Date", y = "Normalised Value (%)", colour = "Keywords") +
+  geom_line(data = filter(mergedDataGSPC, Keyword == "S&P 500 (Log)"), linewidth = 1, colour = "purple") +  
+  labs(title = "G (Logarithmic Scale) and Google Trends Data (2014 - 2024)",
+       x = "Date", y = "Normalized Value [%]", colour = "Keywords") +
   theme_minimal() +
   theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
-  scale_y_continuous(labels = scales::percent_format(scale = 0.8)) +
-  scale_colour_manual(values = c("IXIC" = "green", 
+  scale_colour_manual(values = c("S&P 500 (Log)" = "purple", 
                                  "S&P 500" = "#7CB9E8", 
                                  "Recession" = "#89CFF0", 
                                  "Inflation" = "#6699CC", 
                                  "Stock Crash" = "#318CE7", 
                                  "Stock Market News" = "#4B9CD3"))
+
+
+
+#============== Dow Jones ===========#
+
+# log-transform and normalize DJI data again
+DJIDataLog <- log(DJIData)  # Apply logarithmic transformation
+DJIDataScaled <- data.frame(
+  date = index(DJIDataLog), 
+  hits = min_max_scale(as.numeric(DJIDataLog)),  # Normalize using min_max_scale
+  keyword = "Dow Jones (Log)"
+)
+
+# combine Google Trends data with DJI data
+mergedDataDJI <- tidyData %>%
+  rename(KeywordHits = hits, Keyword = keyword) %>%
+  bind_rows(data.frame(date = DJIDataScaled$date, 
+                       KeywordHits = DJIDataScaled$hits, 
+                       Keyword = "Dow Jones (Log)")) %>%
+  arrange(date)
+
+ggplot(mergedDataDJI, aes(x = date, y = KeywordHits, colour = Keyword, group = Keyword)) +
+  geom_line(linewidth = 1.05) +  
+  geom_line(data = filter(mergedDataDJI, Keyword == "Dow Jones (Log)"), linewidth = 1, colour = "black") +  
+  labs(title = "Dow Jones (Logarithmic Scale) and Google Trends Data (2014 - 2024)",
+       x = "Date", y = "Normalized Value [%]", colour = "Keywords") +
+  theme_minimal() +
+  theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
+  scale_colour_manual(values = c("Dow Jones (Log)" = "black", 
+                                 "S&P 500" = "#7CB9E8", 
+                                 "Recession" = "#89CFF0", 
+                                 "Inflation" = "#6699CC", 
+                                 "Stock Crash" = "#318CE7", 
+                                 "Stock Market News" = "#4B9CD3"))
+
+
+
 
 #=================================================================================#
 
