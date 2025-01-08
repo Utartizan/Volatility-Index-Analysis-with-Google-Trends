@@ -18,10 +18,10 @@ library(ggcorrplot)
 library(e1071)
 library(patchwork)
 
-
-install.packages("patchwork")
-install.packages("ggcorrplot")
 # Ensure all the packages are installed.
+
+# install.packages("patchwork")
+# install.packages("ggcorrplot")
 #install.packages(c("quantmod", "gtrendsR", "dplyr", "ggplot2", "caret", "forecast", "tseries", "randomForest", "xgboost", "reshape2", "tidyr", "corrplot", "writexl", "rugarch", "zoo"))
 
 
