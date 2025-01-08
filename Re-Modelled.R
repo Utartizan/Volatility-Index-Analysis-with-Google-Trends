@@ -286,7 +286,7 @@ plot_VIX <- ggplot(mergedData, aes(x = date, y = KeywordHits, colour = Keyword, 
        x = "Date", y = "Normalised Value (%)", colour = "Keywords") +
   theme_minimal() +
   theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
-  scale_colour_manual(values = c("VIX" = "#A68F26", 
+  scale_colour_manual(values = c("VIX (Log)" = "#A68F26", 
                                  "S&P 500" = "#7CB9E8", 
                                  "Recession" = "#89CFF0", 
                                  "Inflation" = "#6699CC", 
@@ -313,7 +313,7 @@ plot_GSPC <- ggplot(mergedDataGSPC, aes(x = date, y = KeywordHits, colour = Keyw
   geom_line(linewidth = 1.05) +  
   geom_line(data = filter(mergedDataGSPC, Keyword == "S&P 500 (Log)"), linewidth = 1, colour = "#893168") +  
   labs(title = "S&P 500 (Logarithmic Scale) and Google Trends Data (2014 - 2024)",
-       x = "Date", y = "Normalized Value [%]", colour = "Keywords") +
+       x = "Date", y = "Normalised Value [%]", colour = "Keywords") +
   theme_minimal() +
   theme(legend.position = "bottom", legend.title = element_text(face = "bold")) +
   scale_colour_manual(values = c("S&P 500 (Log)" = "#893168", 
